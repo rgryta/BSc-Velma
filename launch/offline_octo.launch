@@ -1,0 +1,15 @@
+<launch>
+
+    <arg name="octomap_file" default="/home/rgryta/velma/src/stero_velma/octomaps/octo1.bt"/>
+    <arg name="world_name" default="worlds/first.world" />
+
+    <include file="$(find stero_velma)/launch/velma_system_stero.launch">
+        <arg name="world_name" value="$(arg world_name)" />
+    </include>
+
+    <include file="$(find velma_common)/launch/octomap_offline_server.launch">
+        <arg name="octomap_file" value="$(arg octomap_file)" />
+    </include>
+
+</launch>
+

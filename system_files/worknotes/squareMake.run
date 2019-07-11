@@ -1,0 +1,10 @@
+(sourced to stero_velma)
+roscore
+roslaunch velma_common velma_system.launch
+roslaunch velma_ros_plugin velma_planner.launch
+rosrun rcprg_ros_utils run_rviz.sh
+(sourced to path_tf_vis : https://github.com/dseredyn/path_tf_vis)
+roslaunch path_tf_vis path_tf_vis.launch frame_id:=right_HandPalmLink
+(sourced to stero_velma)
+rosrun velma_task_cs_ros_interface initialize_robot.py
+rosrun stero_velma squareMake.py
