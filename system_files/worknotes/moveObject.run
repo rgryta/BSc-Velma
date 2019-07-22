@@ -1,6 +1,6 @@
 (sourced to stero_velma)
 roscore
-roslaunch stero_velma octo_offline.launch //octomap_file|world_name
+roslaunch stero_velma offline_octo.launch //octomap_file|world_name
 rosrun velma_task_cs_ros_interface initialize_robot.py
 roslaunch stero_velma rviz_gazebo.launch
 rosrun stero_velma moveObject.py

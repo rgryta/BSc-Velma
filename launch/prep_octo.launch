@@ -1,0 +1,9 @@
+<launch>
+    <arg name="world_name" default="worlds/first.world" />
+    <include file="$(find velma_common)/launch/octomap_server.launch">
+    </include>
+    <include file="$(find stero_velma)/launch/velma_system_stero.launch">
+        <arg name="world_name" value="$(arg world_name)" />
+    </include>
+</launch>
+

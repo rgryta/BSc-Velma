@@ -9,7 +9,7 @@
     <arg name="gui" default="false"/>
     <arg name="debug" default="false"/>
 
-	<include file="$(find velma_sim_gazebo)/launch/velma_gazebo_re.launch">
+    <include file="$(find velma_sim_gazebo)/launch/velma_gazebo_re.launch">
       <arg name="world_name" value="$(arg world_name)"/> <!-- Note: the world_name is with respect to GAZEBO_RESOURCE_PATH environmental variable -->
       <arg name="use_kinect" default="$(arg use_kinect)"/>
       <arg name="gui" default="$(arg gui)"/>
