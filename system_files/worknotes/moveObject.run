@@ -1,9 +1,9 @@
 (sourced to stero_velma)
 roscore
 roslaunch stero_velma offline_octo.launch //octomap_file|world_name
-rosrun velma_task_cs_ros_interface initialize_robot.py
 roslaunch stero_velma rviz_gazebo.launch
-rosrun stero_velma moveObject.py
+rosrun velma_task_cs_ros_interface initialize_robot.py
+nice -n 15 rosrun stero_velma moveObject.py
 
 (cleaning shared memory)
 rosrun velma_common reset_shm_comm
