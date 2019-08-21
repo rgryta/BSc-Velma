@@ -48,7 +48,7 @@ class MarkerPublisherThread:
 
 
  # define a function for frequently used routine in this test
-def planAndExecute(velma, q_dest, object1, scalar):
+def planAndExecute(velma, q_dest):
     # type: (object, object, object) -> object
     print "Moving to valid position, using planned trajectory."
     goal_constraint = qMapToConstraints(q_dest, 0.01, group=velma.getJointGroup("impedance_joints"))
@@ -56,12 +56,8 @@ def planAndExecute(velma, q_dest, object1, scalar):
         rospy.sleep(0.5)
         js = velma.getLastJointState()
         print "Planning (try", i, ")..."
-        if object1==None:
-            traj = p.plan(js[1], [goal_constraint], "impedance_joints", max_velocity_scaling_factor=scalar,
+        traj = p.plan(js[1], [goal_constraint], "impedance_joints", max_velocity_scaling_factor=0.15,
                           planner_id="RRTConnect")
-        else:
-            traj = p.plan(js[1], [goal_constraint], "impedance_joints", max_velocity_scaling_factor=scalar,
-                          planner_id="RRTConnect", attached_collision_objects=[object1])
         if traj == None:
             continue
         print "Executing trajectory..."
@@ -96,10 +92,13 @@ def moveForEquilibrium(velma):
     print "The right tool is now in 'grip' pose"
     rospy.sleep(0.5)
 
-def rotateTorso(velma, torso_angle, q_map, object1):
-    executable_q_map = copy.deepcopy(q_map)
-    executable_q_map['torso_0_joint'] = torso_angle
-    planAndExecute(velma, executable_q_map, object1, 0.005)
+def rotateTorso(velma, torso_angle, q_map):
+    q_map['torso_0_joint'] = torso_angle
+    velma.moveJoint(q_map, 4.0, start_time=0.5, position_tol=15.0/180.0*math.pi)
+    error = velma.waitForJoint()
+    if error != 0:
+        print "The action should have ended without error, but the error code is", error
+        exitError(10)
 
 def grabWithRightHand(velma):
     dest_q = [76.0/180.0*math.pi, 76.0/180.0*math.pi, 76.0/180.0*math.pi, 0]
@@ -119,7 +118,7 @@ def moveToPositionZero(velma):
     velma.waitForJoint()
 
     print "Moving body to position 0"
-    planAndExecute(velma, q_map_starting, None, 0.15)
+    planAndExecute(velma, q_map_starting)
 
 def findCanOnTable(table_tf, cafe_tf, can_tf):
     [t0_x, t0_y, t0_z] = table_tf.p
@@ -273,6 +272,15 @@ if __name__ == "__main__":
         'right_arm_5_joint':-0.5,   'left_arm_5_joint':0.5,
         'right_arm_6_joint':0,      'left_arm_6_joint':0 }
 
+    q_map_aq = {'torso_0_joint':0,
+        'right_arm_0_joint':-0.5,   'left_arm_0_joint':0.3,
+        'right_arm_1_joint':-1.6,   'left_arm_1_joint':1.8,
+        'right_arm_2_joint':1.25,   'left_arm_2_joint':-1.25,
+        'right_arm_3_joint':0.85,   'left_arm_3_joint':-0.85,
+        'right_arm_4_joint':0,      'left_arm_4_joint':0,
+        'right_arm_5_joint':-0.5,   'left_arm_5_joint':0.5,
+        'right_arm_6_joint':0,      'left_arm_6_joint':0 }
+
     #standard initialization
     rospy.init_node('thesis')
     rospy.sleep(0.5)
@@ -323,11 +331,10 @@ if __name__ == "__main__":
     Can_z = T_Wo_Can.p[2]
 
     torso_angle = normalizeTorsoAngle(math.atan2(Can_y, Can_x))
-    rotateTorso(velma, torso_angle, q_map_starting, None)
+    rotateTorso(velma, torso_angle, q_map_aq)
     switchToCartMode(velma)
 
     print "Moving the right tool and equilibrium pose from 'wrist' to 'grip' frame..."
-    arm_aq = velma.getTf("Wo", "Gr") #save returning point
     moveForEquilibrium(velma)
 
     print "Moving grip to can..."
@@ -337,49 +344,21 @@ if __name__ == "__main__":
     xAngle = math.atan2(vector[1],vector[0])
     move_rotation = PyKDL.Rotation.RPY(-xAngle,math.pi/2, 0)
 
-    move_vector = PyKDL.Vector(arm_aq.p[0], arm_aq.p[1], T_Wo_Can.p[2]+0.01)
+    move_vector = getAdjCanPos(pos1.p,T_Wo_Can.p, 0.3)+PyKDL.Vector(0, 0, T_Wo_Can.p[2]+0.01)
     to_can_frame = PyKDL.Frame(move_rotation, move_vector)
     moveInCartImpMode(velma, to_can_frame)
 
-    arm_state = velma.getTf("Wo", "Gr") #save returning point
+    arm_state = to_can_frame #save returning point
 
-    move_vector = getAdjCanPos(arm_aq.p,T_Wo_Can.p, 0.018)+PyKDL.Vector(0, 0, T_Wo_Can.p[2]+0.01)
+    move_vector = getAdjCanPos(pos1.p,T_Wo_Can.p, 0.018)+PyKDL.Vector(0, 0, T_Wo_Can.p[2]+0.01)
     to_can_frame = PyKDL.Frame(move_rotation, move_vector)
     moveInCartImpMode(velma, to_can_frame)
 
     print "Grabbing the can..."
     #grabWithRightHand(velma)
 
-    # for more details refer to ROS docs for moveit_msgs/AttachedCollisionObject
-    object1 = AttachedCollisionObject()
-    object1.link_name = "right_HandGripLink"
-    object1.object.header.frame_id = "right_HandGripLink"
-    object1.object.id = "object1"
-    object1_prim = SolidPrimitive()
-    object1_prim.type = SolidPrimitive.CYLINDER
-    object1_prim.dimensions=[None, None]    # set initial size of the list to 2
-    object1_prim.dimensions[SolidPrimitive.CYLINDER_HEIGHT] = 0.25
-    object1_prim.dimensions[SolidPrimitive.CYLINDER_RADIUS] = 0.06
-    object1_pose = pm.toMsg(PyKDL.Frame(PyKDL.Rotation.RotY(math.pi/2),PyKDL.Vector(0.12,0,0)))
-    object1.object.primitives.append(object1_prim)
-    object1.object.primitive_poses.append(object1_pose)
-    object1.object.operation = CollisionObject.ADD
-    object1.touch_links = ['right_HandPalmLink',
-        'right_HandFingerOneKnuckleOneLink',
-        'right_HandFingerOneKnuckleTwoLink',
-        'right_HandFingerOneKnuckleThreeLink',
-        'right_HandFingerTwoKnuckleOneLink',
-        'right_HandFingerTwoKnuckleTwoLink',
-        'right_HandFingerTwoKnuckleThreeLink',
-        'right_HandFingerThreeKnuckleOneLink',
-        'right_HandFingerThreeKnuckleTwoLink',
-        'right_HandFingerThreeKnuckleThreeLink']
-    print "Publishing the attached object marker on topic /attached_objects"
-    pub = MarkerPublisherThread(object1)
-    pub.start()
-
-    print "Moving right gripper up..."
-    arm_frame = PyKDL.Frame(move_rotation,(arm_state.p+move_vector)/2)
+    print "Moving right gripper back up..."
+    arm_frame = PyKDL.Frame(move_rotation,arm_state.p+PyKDL.Vector(0, 0, 0.1))
     moveInCartImpMode(velma, arm_frame)
 
     print "Switching to jnt_mode..."
@@ -397,8 +376,7 @@ if __name__ == "__main__":
     torso_angle = normalizeTorsoAngle(math.atan2(Target_y, Target_x))
 
     stateUpdate = velma.getLastJointState()[1] #(genpy.Time, {lastState})
-    stateUpdate['torso_0_joint'] = torso_angle
-    rotateTorso(velma, torso_angle, stateUpdate, object1)
+    rotateTorso(velma, torso_angle, stateUpdate)
 
     print "Move to target table"
     switchToCartMode(velma)
@@ -413,9 +391,9 @@ if __name__ == "__main__":
     moveForEquilibrium(velma)
 
     print "Start gripper move"
-    place_can_frame = PyKDL.Frame(move_rotation.M, PyKDL.Vector(move_rotation.p[0], move_rotation.p[1], zf+0.1))  #starting frame for can placement
-    moveInCartImpMode(velma, place_can_frame)
-    place_can_frame = PyKDL.Frame(move_rotation.M, PyKDL.Vector(xf, yf, zf+0.1))
+    place_can_frame_up = PyKDL.Frame(move_rotation.M, PyKDL.Vector((Wr_pos.p[0]+xf)/2, (Wr_pos.p[1]+yf)/2, zf))
+    moveInCartImpMode(velma, place_can_frame_up)
+    place_can_frame = PyKDL.Frame(move_rotation.M, PyKDL.Vector(xf, yf, zf+0.05))
     moveInCartImpMode(velma, place_can_frame)
     place_can_frame = PyKDL.Frame(move_rotation.M, PyKDL.Vector(xf, yf, zf))
     moveInCartImpMode(velma, place_can_frame)
@@ -423,9 +401,8 @@ if __name__ == "__main__":
     print "release object"
     #openRightHand(velma)
 
-    pub.stop()
     print "gripper move back"
-    moveInCartImpMode(velma, move_rotation)
+    moveInCartImpMode(velma, place_can_frame_up)
 
 
     print "return to start position"
