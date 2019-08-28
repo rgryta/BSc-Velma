@@ -102,7 +102,7 @@ def rotateTorso(velma, torso_angle, q_map):
 
 def grabWithRightHand(velma):
     dest_q = [76.0/180.0*math.pi, 76.0/180.0*math.pi, 76.0/180.0*math.pi, 0]
-    velma.moveHandRight(dest_q, [1,1,1,1], [2000,2000,2000,2000], 800, hold=True)
+    velma.moveHandRight(dest_q, [1,1,1,1], [2000,2000,2000,2000], 650, hold=True)
     if velma.waitForHandRight() != 0:
         exitError(10)
     rospy.sleep(0.5)
@@ -355,7 +355,7 @@ if __name__ == "__main__":
     moveInCartImpMode(velma, to_can_frame)
 
     print "Grabbing the can..."
-    #grabWithRightHand(velma)
+    grabWithRightHand(velma)
 
     print "Moving right gripper back up..."
     arm_frame = PyKDL.Frame(move_rotation,arm_state.p+PyKDL.Vector(0, 0, 0.1))
@@ -391,15 +391,18 @@ if __name__ == "__main__":
     moveForEquilibrium(velma)
 
     print "Start gripper move"
-    place_can_frame_up = PyKDL.Frame(move_rotation.M, PyKDL.Vector((Wr_pos.p[0]+xf)/2, (Wr_pos.p[1]+yf)/2, zf))
-    moveInCartImpMode(velma, place_can_frame_up)
+    place_can_frame = PyKDL.Frame(move_rotation.M, PyKDL.Vector(Wr_pos.p[0], Wr_pos.p[1], zf+0.05))
+    place_can_frame_up = PyKDL.Frame(move_rotation.M, PyKDL.Vector(Wr_pos.p[0], Wr_pos.p[1], zf-0.02))
+    moveInCartImpMode(velma, place_can_frame)
     place_can_frame = PyKDL.Frame(move_rotation.M, PyKDL.Vector(xf, yf, zf+0.05))
     moveInCartImpMode(velma, place_can_frame)
     place_can_frame = PyKDL.Frame(move_rotation.M, PyKDL.Vector(xf, yf, zf))
     moveInCartImpMode(velma, place_can_frame)
 
     print "release object"
-    #openRightHand(velma)
+    openRightHand(velma)
+    place_can_frame = PyKDL.Frame(move_rotation.M, PyKDL.Vector(xf, yf, zf-0.02))
+    moveInCartImpMode(velma, place_can_frame)
 
     print "gripper move back"
     moveInCartImpMode(velma, place_can_frame_up)
