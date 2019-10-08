@@ -50,17 +50,15 @@ class MarkerPublisherThread:
  # define a function for frequently used routine in this test
 def planAndExecute(velma, q_dest):
     # type: (object, object, object) -> object
-    print "Moving to valid position, using planned trajectory."
     goal_constraint = qMapToConstraints(q_dest, 0.01, group=velma.getJointGroup("impedance_joints"))
     for i in range(10):
         rospy.sleep(0.5)
         js = velma.getLastJointState()
-        print "Planning (try", i, ")..."
+        #print "Planning (try", i, ")..."
         traj = p.plan(js[1], [goal_constraint], "impedance_joints", max_velocity_scaling_factor=0.15,
                           planner_id="RRTConnect")
         if traj == None:
             continue
-        print "Executing trajectory..."
         if not velma.moveJointTraj(traj, start_time=0.5):
             exitError(5)
         if velma.waitForJoint() == 0:
@@ -89,7 +87,6 @@ def moveForEquilibrium(velma):
     rospy.sleep(0.5)
     if velma.waitForEffectorRight() != 0:
         exitError(19)
-    print "The right tool is now in 'grip' pose"
     rospy.sleep(0.5)
 
 def rotateTorso(velma, torso_angle, q_map):
@@ -112,12 +109,8 @@ def grabWithRightHand(velma):
     rospy.sleep(0.5)
 
 def moveToPositionZero(velma):
-    print "Moving to position 0"
-    print "Switch to jnt_imp mode."
     velma.moveJointImpToCurrentPos(start_time=0.5)
     velma.waitForJoint()
-
-    print "Moving body to position 0"
     planAndExecute(velma, q_map_starting)
 
 def findCanOnTable(table_tf, cafe_tf, can_tf):
@@ -261,6 +254,24 @@ def getClosestPoint(wrPos, tFrame, width, length):
             finalD = dist
     return [finalX, finalY]
 
+def printData(velma):
+    global timestamp
+    global state
+    print "____________________"
+    print time.time()-timestamp #czas od ostatniego checkpointu
+    timestamp = time.time()
+    print math.pi-abs(velma.getTf("Wo", "Gr").M.GetRPY()[1]) #poziom chwytaka
+    tempstate = velma.getLastJointState()[1]
+    for key in q_map_starting:
+        print abs(tempstate[key]-state[key])
+    state=tempstate
+
+def begin():
+    print "Execution Time"
+    print "Gripper Level"
+    for key in q_map_starting:
+        print "Absolute value of "+key+" position difference"
+
 if __name__ == "__main__":
     # define some configurations
     q_map_starting = {'torso_0_joint':0,
@@ -324,8 +335,6 @@ if __name__ == "__main__":
     print "Moving to position zero"
     moveToPositionZero(velma)
 
-    print "Start"
-    start = time.time()
 
     print "Rotating robot..."
     # can position
@@ -341,12 +350,16 @@ if __name__ == "__main__":
 
     torso_angle = normalizeTorsoAngle(math.atan2(Can_y, Can_x))
     rotateTorso(velma, torso_angle, q_map_aq)
-    switchToCartMode(velma)
 
-    print "Moving the right tool and equilibrium pose from 'wrist' to 'grip' frame..."
+    print "____________________\n/START"
+    begin()
+    timestamp = time.time()
+    state = velma.getLastJointState()[1]
+
+    switchToCartMode(velma)
     moveForEquilibrium(velma)
 
-    print "Moving grip to can..."
+    #moving grip halfway to can
     pos1 = velma.getTf("Wo", "Gr")
     pos2 = velma.getTf("Wo", "beer")
     vector = pos2.p - pos1.p
@@ -357,28 +370,32 @@ if __name__ == "__main__":
     move_vector = getAdjCanPos(pos1.p,T_Wo_Can.p, 0.3)+PyKDL.Vector(0, 0, T_Wo_Can.p[2]+0.01)
     to_can_frame = PyKDL.Frame(move_rotation, move_vector)
     moveInCartImpMode(velma, to_can_frame)
+    printData(velma) #checkpoint
 
-    arm_state = to_can_frame #save returning point
+    arm_state = to_can_frame #save returning point for after grab
 
     move_vector = getAdjCanPos(pos1.p,T_Wo_Can.p, 0.018)+PyKDL.Vector(0, 0, T_Wo_Can.p[2]+0.01)
     to_can_frame = PyKDL.Frame(move_rotation, move_vector)
     moveInCartImpMode(velma, to_can_frame)
+    printData(velma) #checkpoint
 
-    print "Grabbing the can..."
+    #Grabbing the can
     grabWithRightHand(velma)
+    printData(velma) #checkpoint
 
-    print "Moving right gripper back up..."
+    #Moving right gripper back up
     arm_frame = PyKDL.Frame(move_rotation,arm_state.p+PyKDL.Vector(0, 0, 0.1))
     moveInCartImpMode(velma, arm_frame)
+    printData(velma) #checkpoint
 
-    print "Switching to jnt_mode..."
+    #Switching to jnt_mode
     switchToJntMode(velma)
     if target_table == "table":
         target_table = "cafe"
-        print "go to: cafe"
+        #go to: cafe
     else:
         target_table = "table"
-        print "go to: table"
+        #go to: table
     T_Wo_Dest = velma.getTf("Wo", target_table)
     Target_x = T_Wo_Dest.p[0]
     Target_y = T_Wo_Dest.p[1]
@@ -387,8 +404,9 @@ if __name__ == "__main__":
 
     stateUpdate = velma.getLastJointState()[1] #(genpy.Time, {lastState})
     rotateTorso(velma, torso_angle, stateUpdate)
+    printData(velma) #checkpoint
 
-    print "Move to target table"
+    #Move to target table
     switchToCartMode(velma)
     T_Wo_table = velma.getTf("Wo", target_table)    #calculating position for can placement
     Wr_pos=velma.getTf("Wo", "Gr") #save reference frame
@@ -400,29 +418,32 @@ if __name__ == "__main__":
 
     moveForEquilibrium(velma)
 
-    print "Start gripper move"
+    #Start gripper move
     place_can_frame = PyKDL.Frame(move_rotation.M, PyKDL.Vector(Wr_pos.p[0], Wr_pos.p[1], zf+0.05))
     place_can_frame_up = PyKDL.Frame(move_rotation.M, PyKDL.Vector(Wr_pos.p[0], Wr_pos.p[1], zf-0.02))
     moveInCartImpMode(velma, place_can_frame)
+    printData(velma) #checkpoint
     place_can_frame = PyKDL.Frame(move_rotation.M, PyKDL.Vector(xf, yf, zf+0.05))
     moveInCartImpMode(velma, place_can_frame)
+    printData(velma) #checkpoint
     place_can_frame = PyKDL.Frame(move_rotation.M, PyKDL.Vector(xf, yf, zf))
     moveInCartImpMode(velma, place_can_frame)
+    printData(velma) #checkpoint
 
-    print "release object"
+    #Release object
     openRightHand(velma)
+    printData(velma) #checkpoint
     place_can_frame = PyKDL.Frame(move_rotation.M, PyKDL.Vector(xf, yf, zf-0.02))
     moveInCartImpMode(velma, place_can_frame)
+    printData(velma) #checkpoint
 
-    print "gripper move back"
+    #Gripper move back
     moveInCartImpMode(velma, place_can_frame_up)
+    printData(velma) #checkpoint
 
 
-    print "return to start position"
-    print "Switching to jnt_mode..."
+    #Return to start position
     switchToJntMode(velma)
     moveToPositionZero(velma)
-    end = time.time()
-    print(end - start)
-
-print "end"
+    printData(velma) #checkpoint
+print "/END"
