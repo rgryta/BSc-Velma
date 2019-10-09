@@ -258,12 +258,12 @@ def printData(velma):
     global timestamp
     global state
     print "____________________"
-    print time.time()-timestamp #czas od ostatniego checkpointu
-    timestamp = time.time()
-    print math.pi-abs(velma.getTf("Wo", "Gr").M.GetRPY()[1]) #poziom chwytaka
+    print rospy.get_time()-timestamp #czas od ostatniego checkpointu
+    print math.pi/2-abs(velma.getTf("Wo", "Gr").M.GetRPY()[1]) #poziom chwytaka
     tempstate = velma.getLastJointState()[1]
     for key in q_map_starting:
         print abs(tempstate[key]-state[key])
+    timestamp = rospy.get_time()
     state=tempstate
 
 def begin():
@@ -283,7 +283,7 @@ if __name__ == "__main__":
         'right_arm_5_joint':-0.5,   'left_arm_5_joint':0.5,
         'right_arm_6_joint':0,      'left_arm_6_joint':0 }
 
-    q_map_aq = {'torso_0_joint':0,
+    q_map_aq2 = {'torso_0_joint':0,
         'right_arm_0_joint':-0.5,   'left_arm_0_joint':0.3,
         'right_arm_1_joint':-1.6,   'left_arm_1_joint':1.8,
         'right_arm_2_joint':1.25,   'left_arm_2_joint':-1.25,
@@ -292,7 +292,7 @@ if __name__ == "__main__":
         'right_arm_5_joint':-0.5,   'left_arm_5_joint':0.5,
         'right_arm_6_joint':0,      'left_arm_6_joint':0 }
 
-    q_map_aq2 = {'torso_0_joint':0,
+    q_map_aq = {'torso_0_joint':0,
         'right_arm_0_joint':-0.5,   'left_arm_0_joint':0.3,
         'right_arm_1_joint':-1.6,   'left_arm_1_joint':1.8,
         'right_arm_2_joint':1.05,   'left_arm_2_joint':-1.25,
@@ -353,7 +353,7 @@ if __name__ == "__main__":
 
     print "____________________\n/START"
     begin()
-    timestamp = time.time()
+    timestamp = rospy.get_time()
     state = velma.getLastJointState()[1]
 
     switchToCartMode(velma)
@@ -364,8 +364,8 @@ if __name__ == "__main__":
     pos2 = velma.getTf("Wo", "beer")
     vector = pos2.p - pos1.p
     xAngle = math.atan2(vector[1],vector[0])
-    move_rotation = PyKDL.Rotation.RPY(-xAngle,math.pi/2, 0) #1st rotation
-    #move_rotation = PyKDL.Rotation.RPY(math.pi+xAngle, -math.pi/2, 0) #2nd rotation
+    #move_rotation = PyKDL.Rotation.RPY(-xAngle,math.pi/2, 0) #1st rotation
+    move_rotation = PyKDL.Rotation.RPY(math.pi+xAngle, -math.pi/2, 0) #2nd rotation
 
     move_vector = getAdjCanPos(pos1.p,T_Wo_Can.p, 0.3)+PyKDL.Vector(0, 0, T_Wo_Can.p[2]+0.01)
     to_can_frame = PyKDL.Frame(move_rotation, move_vector)
