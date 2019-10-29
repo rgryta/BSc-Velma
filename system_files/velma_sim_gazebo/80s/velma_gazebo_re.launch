@@ -118,15 +118,15 @@
         tool:
           m: 1.52832
           com:
-            x: 0.110801
-            y: 0.0108853
-            z: 0.0223994
-          ixx: 0.0115396
-          ixy: -0.000253958
-          ixz: -0.000929666
-          iyy: 0.00793204
-          iyz: -0.000586023
-          izz: 0.00975931
+            x: 0.150339
+            y: 0.0108858
+            z: -0.0465057
+          ixx: 0.0081479
+          ixy: -0.000570698
+          ixz: 0.000286258
+          iyy: 0.00690511
+          iyz: -0.000106027
+          izz: 0.0121237
       LWRlSim:
         name: left
         init_joint_names: [left_arm_0_joint, left_arm_1_joint, left_arm_2_joint, left_arm_3_joint, left_arm_4_joint, left_arm_5_joint, left_arm_6_joint]
@@ -134,15 +134,15 @@
         tool:
           m: 1.53858
           com:
-            x: -0.110666
-            y: 0.0111228
-            z: 0.0232827
-          ixx: 0.0118743
-          ixy: 0.000214288
-          ixz: 0.00092312
-          iyy: 0.00799052
-          iyz: -0.000651142
-          izz: 0.00990159
+            x: -0.150766
+            y: 0.0111222
+            z: -0.0457467
+          ixx: 0.0083847
+          ixy: 0.000573932
+          ixz: -0.000198109
+          iyy: 0.00691831
+          iyz: -0.000177776
+          izz: 0.0123177
       RightHand:
         prefix: right
         disable_component: false
