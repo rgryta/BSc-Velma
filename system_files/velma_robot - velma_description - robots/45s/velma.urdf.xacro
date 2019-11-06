@@ -216,9 +216,9 @@
   </xacro:if>
 
   <xacro:property name="M_PI" value="3.1415926535897931" />
-  <xacro:property name="RADIANS" value="0.872664626" />
-  <xacro:property name="X_VAL" value="0.07430631098" />
-  <xacro:property name="Z_VAL" value="-0.02593420362" />
+  <xacro:property name="RADIANS" value="0.7853981634" />
+  <xacro:property name="X_VAL" value="0.08131727984" />
+  <xacro:property name="Z_VAL" value="-0.007996428663" />
 
   <link name="world" />
 

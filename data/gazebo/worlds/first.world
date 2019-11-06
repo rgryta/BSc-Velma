@@ -12,8 +12,8 @@
     <atmosphere type='adiabatic'/>
     <physics name='dart_2ms' default='1' type='dart'>
       <max_step_size>0.002</max_step_size>
-      <real_time_factor>1</real_time_factor>
-      <real_time_update_rate>500</real_time_update_rate>
+      <real_time_factor>10</real_time_factor>
+      <real_time_update_rate>-1</real_time_update_rate>
     </physics>
     <wind/>
     <spherical_coordinates>
@@ -362,25 +362,25 @@
     <state world_name='default'>
       <sim_time>20 468000000</sim_time>
       <real_time>0 0</real_time>
-      <wall_time>1567023662 62774323</wall_time>
+      <wall_time>1573063849 641821344</wall_time>
       <iterations>0</iterations>
       <model name='beer'>
-        <pose frame=''>0.009278 -0.763778 0.774989 -2.6e-05 -1.5e-05 0.000939</pose>
+        <pose frame=''>0.009275 -0.763773 0.774987 0 -0 0</pose>
         <scale>1 1 1</scale>
         <link name='link'>
-          <pose frame=''>0.009276 -0.763775 0.89101 -2.6e-05 -1.5e-05 0.000939</pose>
+          <pose frame=''>0.009275 -0.763773 0.891008 0 -0 0</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>
         </link>
         <link name='link_0'>
-          <pose frame=''>0.009276 -0.763775 0.781987 0 -0 0</pose>
+          <pose frame=''>0.009273 -0.76377 0.781985 2.6e-05 1.5e-05 -0.000939</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>
         </link>
         <link name='link_0_clone'>
-          <pose frame=''>0.009275 -0.763774 1.01098 2.6e-05 1.5e-05 -0.000939</pose>
+          <pose frame=''>0.009276 -0.763775 1.01097 5.2e-05 3e-05 -0.001878</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>
@@ -422,23 +422,26 @@
     </state>
     <gui fullscreen='0'>
       <camera name='user_camera'>
-        <pose frame=''>-2.20649 0.373341 1.11273 0 0.052507 -0.483316</pose>
+        <pose frame=''>-3.83462 -0.612725 2.27076 0 0.377805 0.007376</pose>
         <view_controller>orbit</view_controller>
         <projection_type>perspective</projection_type>
       </camera>
     </gui>
+    <audio>
+      <device>default</device>
+    </audio>
     <model name='beer'>
       <link name='link'>
         <pose frame=''>-0 0 0.116021 0 -0 0</pose>
         <inertial>
-          <mass>0.2</mass>
+          <mass>0.179344</mass>
           <inertia>
-            <ixx>0.00029</ixx>
+            <ixx>0.000912286</ixx>
             <ixy>0</ixy>
             <ixz>0</ixz>
-            <iyy>0.00029</iyy>
+            <iyy>0.000912286</iyy>
             <iyz>0</iyz>
-            <izz>0.0001</izz>
+            <izz>0.000243359</izz>
           </inertia>
           <pose frame=''>0 0 0 0 -0 0</pose>
         </inertial>
@@ -448,7 +451,7 @@
         <visual name='visual'>
           <geometry>
             <cylinder>
-              <radius>0.055</radius>
+              <radius>0.0520949</radius>
               <length>0.23</length>
             </cylinder>
           </geometry>
@@ -471,7 +474,7 @@
           <pose frame=''>0 0 0 0 -0 0</pose>
           <geometry>
             <cylinder>
-              <radius>0.055</radius>
+              <radius>0.052095</radius>
               <length>0.23</length>
             </cylinder>
           </geometry>
@@ -524,14 +527,14 @@
       </link>
       <link name='link_0'>
         <inertial>
-          <mass>0.00104318</mass>
+          <mass>0.00052946</mass>
           <inertia>
-            <ixx>5.7679e-06</ixx>
+            <ixx>1.49e-06</ixx>
             <ixy>0</ixy>
             <ixz>0</ixz>
-            <iyy>5.7679e-06</iyy>
+            <iyy>1.49e-06</iyy>
             <iyz>0</iyz>
-            <izz>1.15109e-05</izz>
+            <izz>2.97e-06</izz>
           </inertia>
           <pose frame=''>0 0 0 0 -0 0</pose>
         </inertial>
@@ -539,12 +542,13 @@
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
         <kinematic>0</kinematic>
+        <gravity>1</gravity>
         <visual name='visual'>
           <pose frame=''>0 0 0 0 -0 0</pose>
           <geometry>
             <cylinder>
-              <radius>0.148556</radius>
-              <length>0.0119588</length>
+              <radius>0.1</radius>
+              <length>0.011959</length>
             </cylinder>
           </geometry>
           <material>
@@ -552,8 +556,13 @@
               <uri>file://media/materials/scripts/gazebo.material</uri>
               <name>Gazebo/Grey</name>
             </script>
-            <shader type='pixel'/>
+            <shader type='pixel'>
+              <normal_map>__default__</normal_map>
+            </shader>
             <emissive>0 0 0 1</emissive>
+            <ambient>0.3 0.3 0.3 1</ambient>
+            <diffuse>0.7 0.7 0.7 1</diffuse>
+            <specular>0.01 0.01 0.01 1</specular>
           </material>
           <cast_shadows>0</cast_shadows>
           <transparency>0</transparency>
@@ -564,7 +573,7 @@
           <pose frame=''>0 0 0 0 -0 0</pose>
           <geometry>
             <cylinder>
-              <radius>0.148556</radius>
+              <radius>0.105838</radius>
               <length>0.011959</length>
             </cylinder>
           </geometry>
@@ -617,14 +626,14 @@
       </link>
       <link name='link_0_clone'>
         <inertial>
-          <mass>0.00102032</mass>
+          <mass>0.00050523</mass>
           <inertia>
-            <ixx>5.64152e-06</ixx>
+            <ixx>1.39e-06</ixx>
             <ixy>0</ixy>
             <ixz>0</ixz>
-            <iyy>5.64152e-06</iyy>
+            <iyy>1.39e-06</iyy>
             <iyz>0</iyz>
-            <izz>1.12587e-05</izz>
+            <izz>2.76e-06</izz>
           </inertia>
           <pose frame=''>0 0 0 0 -0 0</pose>
         </inertial>
@@ -632,12 +641,13 @@
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
         <kinematic>0</kinematic>
+        <gravity>1</gravity>
         <visual name='visual'>
           <pose frame=''>0 0 0 0 -0 0</pose>
           <geometry>
             <cylinder>
-              <radius>0.148556</radius>
-              <length>0.0119588</length>
+              <radius>0.1</radius>
+              <length>0.011959</length>
             </cylinder>
           </geometry>
           <material>
@@ -645,8 +655,13 @@
               <uri>file://media/materials/scripts/gazebo.material</uri>
               <name>Gazebo/Grey</name>
             </script>
-            <shader type='pixel'/>
+            <shader type='pixel'>
+              <normal_map>__default__</normal_map>
+            </shader>
             <emissive>0 0 0 1</emissive>
+            <ambient>0.3 0.3 0.3 1</ambient>
+            <diffuse>0.7 0.7 0.7 1</diffuse>
+            <specular>0.01 0.01 0.01 1</specular>
           </material>
           <cast_shadows>0</cast_shadows>
           <transparency>0</transparency>
@@ -657,7 +672,7 @@
           <pose frame=''>0 0 0 0 -0 0</pose>
           <geometry>
             <cylinder>
-              <radius>0.148556</radius>
+              <radius>0.104538</radius>
               <length>0.011959</length>
             </cylinder>
           </geometry>
@@ -712,21 +727,6 @@
         <parent>link</parent>
         <child>link_0_clone</child>
         <pose frame=''>0 0 0 0 -0 0</pose>
-        <axis>
-          <xyz>1 0 0</xyz>
-          <use_parent_model_frame>0</use_parent_model_frame>
-          <limit>
-            <lower>-1.79769e+308</lower>
-            <upper>1.79769e+308</upper>
-            <effort>-1</effort>
-            <velocity>-1</velocity>
-          </limit>
-          <dynamics>
-            <spring_reference>0</spring_reference>
-            <spring_stiffness>0</spring_stiffness>
-            <damping>0</damping>
-          </dynamics>
-        </axis>
         <physics>
           <ode>
             <limit>
@@ -739,27 +739,11 @@
             </suspension>
           </ode>
         </physics>
-        <thread_pitch>1</thread_pitch>
       </joint>
       <joint name='link_JOINT_2' type='fixed'>
         <parent>link</parent>
         <child>link_0</child>
         <pose frame=''>0 0 0 0 -0.01 -0.01</pose>
-        <axis>
-          <xyz>1 0 0</xyz>
-          <use_parent_model_frame>0</use_parent_model_frame>
-          <limit>
-            <lower>-1.79769e+308</lower>
-            <upper>1.79769e+308</upper>
-            <effort>-1</effort>
-            <velocity>-1</velocity>
-          </limit>
-          <dynamics>
-            <spring_reference>0</spring_reference>
-            <spring_stiffness>0</spring_stiffness>
-            <damping>0</damping>
-          </dynamics>
-        </axis>
         <physics>
           <ode>
             <limit>
@@ -772,11 +756,10 @@
             </suspension>
           </ode>
         </physics>
-        <thread_pitch>1</thread_pitch>
       </joint>
       <static>0</static>
       <allow_auto_disable>1</allow_auto_disable>
-      <pose frame=''>0.009278 -0.763778 0.774989 -2.6e-05 -1.5e-05 0.000939</pose>
+      <pose frame=''>-0.113088 -0.407399 0 0 -0 0</pose>
     </model>
   </world>
 </sdf>
