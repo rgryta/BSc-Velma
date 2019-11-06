@@ -384,7 +384,7 @@ if __name__ == "__main__":
 
     arm_state = to_can_frame #save returning point for after grab
 
-    move_vector = getAdjCanPos(pos1.p,T_Wo_Can.p, 0.018)+PyKDL.Vector(0, 0, T_Wo_Can.p[2]+0.01)
+    move_vector = getAdjCanPos(pos1.p,T_Wo_Can.p, 0.012)+PyKDL.Vector(0, 0, T_Wo_Can.p[2]+0.01)
     to_can_frame = PyKDL.Frame(move_rotation, move_vector)
     moveInCartImpMode(velma, to_can_frame)
     printData(velma) #checkpoint
@@ -430,21 +430,18 @@ if __name__ == "__main__":
 
     #Start gripper move
     place_can_frame = PyKDL.Frame(move_rotation.M, PyKDL.Vector(Wr_pos.p[0], Wr_pos.p[1], zf+0.05))
-    place_can_frame_up = PyKDL.Frame(move_rotation.M, PyKDL.Vector(Wr_pos.p[0], Wr_pos.p[1], zf-0.02))
+    place_can_frame_up = PyKDL.Frame(move_rotation.M, PyKDL.Vector(Wr_pos.p[0], Wr_pos.p[1], zf-0.03))
     moveInCartImpMode(velma, place_can_frame)
     printData(velma) #checkpoint
     place_can_frame = PyKDL.Frame(move_rotation.M, PyKDL.Vector(xf, yf, zf+0.05))
     moveInCartImpMode(velma, place_can_frame)
     printData(velma) #checkpoint
-    place_can_frame = PyKDL.Frame(move_rotation.M, PyKDL.Vector(xf, yf, zf))
+    place_can_frame = PyKDL.Frame(move_rotation.M, PyKDL.Vector(xf, yf, zf-0.03))
     moveInCartImpMode(velma, place_can_frame)
     printData(velma) #checkpoint
 
     #Release object
     openRightHand(velma)
-    printData(velma) #checkpoint
-    place_can_frame = PyKDL.Frame(move_rotation.M, PyKDL.Vector(xf, yf, zf-0.02))
-    moveInCartImpMode(velma, place_can_frame)
     printData(velma) #checkpoint
 
     #Gripper move back
