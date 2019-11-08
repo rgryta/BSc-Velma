@@ -452,5 +452,5 @@ if __name__ == "__main__":
     #Return to start position
     switchToJntMode(velma)
     moveToPositionZero(velma)
-    printData(velma) #checkpoint
+    #printData(velma) #checkpoint
 print "/END"
