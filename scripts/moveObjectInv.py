@@ -338,10 +338,10 @@ if __name__ == "__main__":
 
     q_map_aq = {'torso_0_joint':0,
         'right_arm_0_joint':-0.5,   'left_arm_0_joint':0.3,
-        'right_arm_1_joint':-1.0,   'left_arm_1_joint':1.8,
+        'right_arm_1_joint':-1.3,   'left_arm_1_joint':1.8,
         'right_arm_2_joint':1.25,   'left_arm_2_joint':-1.25,
         'right_arm_3_joint':0.85,   'left_arm_3_joint':-0.85,
-        'right_arm_4_joint':2,      'left_arm_4_joint':0,
+        'right_arm_4_joint':-2,      'left_arm_4_joint':0,
         'right_arm_5_joint':-0.5,   'left_arm_5_joint':0.5,
         'right_arm_6_joint':0,      'left_arm_6_joint':0 }
 
@@ -440,7 +440,7 @@ if __name__ == "__main__":
 
     torso_angle = normalizeTorsoAngle(math.atan2(Target_y, Target_x))
     rotateTorso(velma, torso_angle, stateUpdate, 5.0)
-    printData(velma,-1) #checkpoint
+    printData(velma) #checkpoint
 
     #Move to target table
     T_Wo_table = velma.getTf("Wo", target_table)    #calculating position for can placement
@@ -449,9 +449,7 @@ if __name__ == "__main__":
     table_height=1.2
     zf = T_Wo_table.p[2]+table_height
 
-    move_rotation=PyKDL.Rotation.RPY(math.pi/2,0,math.pi/2)
-    move_rotation2=PyKDL.Rotation.RPY(math.pi/1.5,0,math.pi/2)
-    move_rotation3=PyKDL.Rotation.RPY(math.pi,0,math.pi/2)
+    move_rotation=PyKDL.Rotation.RPY(math.pi,0,math.pi/2)
 
     switchToCartMode(velma)
     moveForEquilibrium(velma)
@@ -460,11 +458,11 @@ if __name__ == "__main__":
     place_can_frame = PyKDL.Frame(move_rotation, PyKDL.Vector(Wr_pos.p[0], Wr_pos.p[1], zf+0.05))
     place_can_frame_up = place_can_frame
     moveInCartImpMode(velma, place_can_frame, 10.0)
-    printData(velma,deg=math.pi/2) #checkpoint
-    place_can_frame2 = PyKDL.Frame(move_rotation2, PyKDL.Vector(xf, yf, zf+0.05))
+    printData(velma) #checkpoint
+    place_can_frame2 = PyKDL.Frame(move_rotation, PyKDL.Vector(xf, yf, zf+0.05))
     moveInCartImpMode(velma, place_can_frame2, 10.0)
-    printData(velma,deg=math.pi/1.5) #checkpoint
-    place_can_frame = PyKDL.Frame(move_rotation3, PyKDL.Vector(xf, yf, zf-0.03))
+    printData(velma) #checkpoint
+    place_can_frame = PyKDL.Frame(move_rotation, PyKDL.Vector(xf, yf, zf-0.03))
     moveInCartImpMode(velma, place_can_frame, 5.0)
     printData(velma) #checkpoint
 
@@ -474,9 +472,9 @@ if __name__ == "__main__":
 
     #Gripper move back
     moveInCartImpMode(velma, place_can_frame2, 10.0)
-    printData(velma,deg=math.pi/1.5) #checkpoint
+    printData(velma) #checkpoint
     moveInCartImpMode(velma, place_can_frame_up, 5.0)
-    printData(velma,deg=math.pi/2) #checkpoint
+    printData(velma) #checkpoint
 
     #Return to start position
     switchToJntMode(velma)
