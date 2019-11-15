@@ -278,14 +278,14 @@ def blockPrint():
 def enablePrint():
     sys.stdout = sys.__stdout__
 
-def printData(velma,deg=math.pi):
+def printData(velma,deg=-math.pi):
     enablePrint()
     global timestamp
     global state
     print "____________________"
     print rospy.get_time()-timestamp #czas od ostatniego checkpointu
-    if deg!=-1:
-        print deg-abs(velma.getTf("Wo", "Gr").M.GetRPY()[0]) #poziom chwytaka
+    if deg!=-1.0:
+        print abs(deg-velma.getTf("Wo", "Gr").M.GetRPY()[0]) #poziom chwytaka
     else:
         print '0'
     tempstate = velma.getLastJointState()[1]
@@ -323,7 +323,7 @@ if __name__ == "__main__":
         'right_arm_0_joint':-0.3,   'left_arm_0_joint':0.3,
         'right_arm_1_joint':-1.8,   'left_arm_1_joint':1.8,
         'right_arm_2_joint':1.25,   'left_arm_2_joint':-1.25,
-        'right_arm_3_joint':0.85,   'left_arm_3_joint':-0.85,
+        'right_arm_3_joint':0.8,   'left_arm_3_joint':-0.85,
         'right_arm_4_joint':0,      'left_arm_4_joint':0,
         'right_arm_5_joint':-0.5,   'left_arm_5_joint':0.5,
         'right_arm_6_joint':0,      'left_arm_6_joint':0 }
@@ -338,10 +338,10 @@ if __name__ == "__main__":
 
     q_map_aq = {'torso_0_joint':0,
         'right_arm_0_joint':-0.5,   'left_arm_0_joint':0.3,
-        'right_arm_1_joint':-1.0,   'left_arm_1_joint':1.8,
+        'right_arm_1_joint':-1.3,   'left_arm_1_joint':1.8,
         'right_arm_2_joint':1.25,   'left_arm_2_joint':-1.25,
-        'right_arm_3_joint':0.85,   'left_arm_3_joint':-0.85,
-        'right_arm_4_joint':2,      'left_arm_4_joint':0,
+        'right_arm_3_joint':0.5,   'left_arm_3_joint':-0.85,
+        'right_arm_4_joint':-2,      'left_arm_4_joint':0,
         'right_arm_5_joint':-0.5,   'left_arm_5_joint':0.5,
         'right_arm_6_joint':0,      'left_arm_6_joint':0 }
 
@@ -381,7 +381,7 @@ if __name__ == "__main__":
     Can_z = T_Wo_Can.p[2]
 
     torso_angle = normalizeTorsoAngle(math.atan2(Can_y, Can_x))
-    rotateTorso(velma, torso_angle, q_map_aq, 4.0)
+    rotateTorso(velma, torso_angle, q_map_aq, 10.0)
 
     enablePrint()
     print "____________________\n/START"
@@ -397,16 +397,14 @@ if __name__ == "__main__":
     pos2 = velma.getTf("Wo", "beer")
     vector = pos2.p - pos1.p
     xAngle = math.atan2(vector[1],vector[0])
-    move_rotation = PyKDL.Rotation.RPY(math.pi, 0, 0) #1st rotation
+    move_rotation = PyKDL.Rotation.RPY(-math.pi, 0, math.pi) #1st rotation
 
     move_vector = getAdjCanPos(pos1.p,T_Wo_Can.p, 0.3)+PyKDL.Vector(0, 0, T_Wo_Can.p[2]+0.12)
     to_can_frame = PyKDL.Frame(move_rotation, move_vector)
-    moveInCartImpMode(velma, to_can_frame, 35.0)
+    moveInCartImpMode(velma, to_can_frame, 15.0)
     printData(velma) #checkpoint
 
     stateUpdate = velma.getLastJointState()[1] #(genpy.Time, {lastState})
-    stateUpdate['right_arm_5_joint']=-1.0 #clear for effector error
-    stateUpdate['right_arm_6_joint']=-1.0 #clear for effector error
 
     move_vector = getAdjCanPos(pos1.p,T_Wo_Can.p, 0.0)+PyKDL.Vector(0, 0, T_Wo_Can.p[2]+0.12)
     to_can_frame = PyKDL.Frame(move_rotation, move_vector)
@@ -425,6 +423,7 @@ if __name__ == "__main__":
     move_vector = getAdjCanPos(pos1.p,T_Wo_Can.p, 0.0)+PyKDL.Vector(0, 0, T_Wo_Can.p[2]+0.12)
     to_can_frame = PyKDL.Frame(move_rotation, move_vector)
     moveInCartImpMode(velma, to_can_frame, 5.0)
+    printData(velma) #checkpoint
 
     switchToJntMode(velma)
     #Switching to jnt_mode
@@ -440,7 +439,7 @@ if __name__ == "__main__":
 
     torso_angle = normalizeTorsoAngle(math.atan2(Target_y, Target_x))
     rotateTorso(velma, torso_angle, stateUpdate, 5.0)
-    printData(velma,-1) #checkpoint
+    printData(velma) #checkpoint
 
     #Move to target table
     T_Wo_table = velma.getTf("Wo", target_table)    #calculating position for can placement
@@ -449,9 +448,7 @@ if __name__ == "__main__":
     table_height=1.2
     zf = T_Wo_table.p[2]+table_height
 
-    move_rotation=PyKDL.Rotation.RPY(math.pi/2,0,math.pi/2)
-    move_rotation2=PyKDL.Rotation.RPY(math.pi/1.5,0,math.pi/2)
-    move_rotation3=PyKDL.Rotation.RPY(math.pi,0,math.pi/2)
+    move_rotation=PyKDL.Rotation.RPY(-math.pi,0,-math.pi/2)
 
     switchToCartMode(velma)
     moveForEquilibrium(velma)
@@ -460,11 +457,11 @@ if __name__ == "__main__":
     place_can_frame = PyKDL.Frame(move_rotation, PyKDL.Vector(Wr_pos.p[0], Wr_pos.p[1], zf+0.05))
     place_can_frame_up = place_can_frame
     moveInCartImpMode(velma, place_can_frame, 10.0)
-    printData(velma,deg=math.pi/2) #checkpoint
-    place_can_frame2 = PyKDL.Frame(move_rotation2, PyKDL.Vector(xf, yf, zf+0.05))
+    printData(velma) #checkpoint
+    place_can_frame2 = PyKDL.Frame(move_rotation, PyKDL.Vector(xf, yf, zf+0.05))
     moveInCartImpMode(velma, place_can_frame2, 10.0)
-    printData(velma,deg=math.pi/1.5) #checkpoint
-    place_can_frame = PyKDL.Frame(move_rotation3, PyKDL.Vector(xf, yf, zf-0.03))
+    printData(velma) #checkpoint
+    place_can_frame = PyKDL.Frame(move_rotation, PyKDL.Vector(xf, yf, zf-0.03))
     moveInCartImpMode(velma, place_can_frame, 5.0)
     printData(velma) #checkpoint
 
@@ -474,9 +471,9 @@ if __name__ == "__main__":
 
     #Gripper move back
     moveInCartImpMode(velma, place_can_frame2, 10.0)
-    printData(velma,deg=math.pi/1.5) #checkpoint
+    printData(velma) #checkpoint
     moveInCartImpMode(velma, place_can_frame_up, 5.0)
-    printData(velma,deg=math.pi/2) #checkpoint
+    printData(velma) #checkpoint
 
     #Return to start position
     switchToJntMode(velma)
