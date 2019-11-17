@@ -381,7 +381,8 @@ if __name__ == "__main__":
     Can_z = T_Wo_Can.p[2]
 
     torso_angle = normalizeTorsoAngle(math.atan2(Can_y, Can_x))
-    rotateTorso(velma, torso_angle, q_map_aq, 10.0)
+    rotateTorso(velma, torso_angle, q_map_starting, 10.0)
+    rotateTorso(velma, torso_angle, q_map_aq, 2.0)
 
     enablePrint()
     print "____________________\n/START"
@@ -476,10 +477,5 @@ if __name__ == "__main__":
     printData(velma) #checkpoint
     moveInCartImpMode(velma, place_can_frame_up, 5.0)
     printData(velma) #checkpoint
-
-    #Return to start position
-    switchToJntMode(velma)
-    moveToPositionZero(velma)
-    #printData(velma) #checkpoint
     enablePrint()
 print "/END"
