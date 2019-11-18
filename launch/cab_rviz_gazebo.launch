@@ -1,0 +1,14 @@
+<launch>
+
+    <include file="$(find rcprg_gazebo_utils)/launch/gazebo_client.launch" />
+
+    <include file="$(find velma_ros_plugin)/launch/velma_planner.launch" />
+
+    <include file="$(find rcprg_gazebo_utils)/launch/gazebo_publish_ros_tf_object.launch">
+        <arg name="link_name" value="beer::handle" />
+        <arg name="frame_id" value="beer" />
+    </include>
+
+    <node pkg="rcprg_ros_utils" type="run_rviz.sh" name="rviz" args="-d $(find stero_velma)/rviz.config.rviz" />
+
+</launch>

@@ -318,7 +318,7 @@ def init():
 
 if __name__ == "__main__":
     # define some configurations
-    blockPrint()
+    #blockPrint()
     q_map_starting = {'torso_0_joint':0,
         'right_arm_0_joint':-0.3,   'left_arm_0_joint':0.3,
         'right_arm_1_joint':-1.8,   'left_arm_1_joint':1.8,
@@ -371,18 +371,8 @@ if __name__ == "__main__":
     #Rotating robot...
     # can position
     T_Wo_Can = velma.getTf("Wo", "beer")
-    T_Wo_Table_0 = velma.getTf("Wo", "table")
-    T_Wo_Table_1 = velma.getTf("Wo", "cafe")
 
-    target_table = findCanOnTable(T_Wo_Table_0, T_Wo_Table_1, T_Wo_Can) # na ktorym stoliku znajduje sie puszka
-
-    Can_x = T_Wo_Can.p[0]   
-    Can_y = T_Wo_Can.p[1]
-    Can_z = T_Wo_Can.p[2]
-
-    torso_angle = normalizeTorsoAngle(math.atan2(Can_y, Can_x))
-    rotateTorso(velma, torso_angle, q_map_starting, 10.0)
-    rotateTorso(velma, torso_angle, q_map_aq, 2.0)
+    rotateTorso(velma, 1.5, q_map_aq, 12.0)
 
     enablePrint()
     print "____________________\n/START"
