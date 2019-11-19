@@ -199,6 +199,15 @@ if __name__ == "__main__":
         'right_arm_5_joint':-0.5,   'left_arm_5_joint':0.5,
         'right_arm_6_joint':0,      'left_arm_6_joint':0 }
 
+    q_map_starting2 = {'torso_0_joint':0,
+        'right_arm_0_joint':-0.3,   'left_arm_0_joint':0.3,
+        'right_arm_1_joint':-1.5,   'left_arm_1_joint':1.8,
+        'right_arm_2_joint':1.25,   'left_arm_2_joint':-1.25,
+        'right_arm_3_joint':0.8,   'left_arm_3_joint':-0.85,
+        'right_arm_4_joint':0,      'left_arm_4_joint':0,
+        'right_arm_5_joint':-0.5,   'left_arm_5_joint':0.5,
+        'right_arm_6_joint':0,      'left_arm_6_joint':0 }
+
     q_map_left = {'left_arm_0_joint':0.3,
         'left_arm_1_joint':1.8,
         'left_arm_2_joint':-1.25,
@@ -226,7 +235,7 @@ if __name__ == "__main__":
     Can_z = T_Wo_Handle.p[2]
 
     torso_angle = normalizeTorsoAngle(math.atan2(Can_y, Can_x))
-    rotateTorso(velma, torso_angle, q_map_starting,5.0)
+    rotateTorso(velma, torso_angle, q_map_starting2, 5.0)
 
     #Rotating robot...
     # can position
