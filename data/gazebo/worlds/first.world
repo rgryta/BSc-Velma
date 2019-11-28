@@ -151,7 +151,7 @@
     <model name='beer'>
       <link name='link_0_clone'>
         <inertial>
-          <mass>1.99086</mass>
+          <mass>10.99086</mass>
           <inertia>
             <ixx>0.823456</ixx>
             <ixy>0</ixy>
