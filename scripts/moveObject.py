@@ -170,38 +170,55 @@ def getAdjFrame(velma,r):
     frame = PyKDL.Frame(frameRot, frameVec)
     return frame
 
-# Disable
-def blockPrint():
-    #sys.stdout = open(os.devnull, 'w')
-    print "--"
+def moveFrame(velma,r,angle):
+    global rotation
+    global rot_point
+    global handle
+    global handle_twin
+    global phase
 
-# Restore
-def enablePrint():
-    #sys.stdout = sys.__stdout__
-    print "--"
+    vHandleTwin = handle_twin.p-rot_point.p
+    vHandle = handle.p-rot_point.p
 
-def printData(velma,deg=-math.pi):
-    enablePrint()
-    global timestamp
-    global state
-    print "____________________"
-    print rospy.get_time()-timestamp #czas od ostatniego checkpointu
-    if deg!=-1.0:
-        print abs(deg-velma.getTf("Wo", "Gr").M.GetRPY()[0]) #poziom chwytaka
+    dx = vHandleTwin[0]
+    dy = vHandleTwin[1]
+    vHandleTwin[0] = dx*math.cos(angle)-dy*math.sin(angle)
+    vHandleTwin[1] = dx*math.sin(angle)+dy*math.cos(angle)
+
+    dx = vHandle[0]
+    dy = vHandle[1]
+    vHandle[0] = dx*math.cos(angle)-dy*math.sin(angle)
+    vHandle[1] = dx*math.sin(angle)+dy*math.cos(angle)
+
+    vect = vHandleTwin-vHandle
+    
+    dx = vect[0]
+    dy = vect[1]
+    l = math.sqrt(math.pow(dx,2)+math.pow(dy,2))
+
+    if (phase==1):
+        vx = (r/l)*(dx*math.cos(math.pi/2)-dy*math.sin(math.pi/2))
+        vy = (r/l)*(dx*math.sin(math.pi/2)+dy*math.cos(math.pi/2))
     else:
-        print '0'
-    tempstate = velma.getLastJointState()[1]
-    for key in q_map_starting:
-        print abs(tempstate[key]-state[key])
-    timestamp = rospy.get_time()
-    state=tempstate
-    blockPrint()
+        vx = (r/l)*(dx*math.cos(0)-dy*math.sin(0))
+        vy = (r/l)*(dx*math.sin(0)+dy*math.cos(0))
 
-def begin():
-    print "Execution Time"
-    print "Gripper Level"
-    for key in q_map_starting:
-        print "Absolute value of "+key+" position difference"
+    rot = math.atan2(vy,vx)
+
+    if (rotation==1):
+        frameRot=PyKDL.Rotation.RPY(0, math.pi/2, 0)*PyKDL.Rotation.RPY(-rot, 0, 0) #1st rotation
+    elif (rotation==2):
+        frameRot=PyKDL.Rotation.RPY(math.pi, -math.pi/2, 0)*PyKDL.Rotation.RPY(rot, 0, 0) #2nd rotation
+    else:
+        exitError(0)
+
+    wx = rot_point.p[0]+vHandle[0]-vx
+    wy = rot_point.p[1]+vHandle[1]-vy
+    wz = rot_point.p[2]+vHandle[2]
+    frameVec = PyKDL.Vector(wx,wy,wz)
+
+    frame = PyKDL.Frame(frameRot, frameVec)
+    return frame
 
 def init():
     velma = VelmaInterface()
@@ -220,7 +237,6 @@ def init():
 
 if __name__ == "__main__":
     # define some configurations
-    #blockPrint()
     q_map_starting = {'torso_0_joint':0,
         'right_arm_0_joint':-0.3,   'left_arm_0_joint':0.3,
         'right_arm_1_joint':-1.8,   'left_arm_1_joint':1.8,
@@ -255,6 +271,10 @@ if __name__ == "__main__":
 
     #Initializing robot...
     velma=init()
+    rot_point = velma.getTf("Wo", "rot_point")
+    handle = velma.getTf("Wo", "handle")
+    handle_twin = velma.getTf("Wo", "handle_twin")
+    phase = 1
 
     switchToJntMode(velma)
 
@@ -271,10 +291,6 @@ if __name__ == "__main__":
 
     #Rotating robot...
     # can position
-
-    enablePrint()
-    print "____________________\n/START"
-    blockPrint()
 
     switchToCartMode(velma)
     moveForEquilibrium(velma)
@@ -296,16 +312,30 @@ if __name__ == "__main__":
         moveInCartImpMode(velma, to_can_frame, 25.0)
 
 
-    move_frame = getAdjFrame(velma,0.001)
+    move_frame = getAdjFrame(velma,0.01)
     moveInCartImpMode(velma, move_frame, 15.0)
 
     grabWithRightHand(velma)
 
+    last_angle=0
     try:
-        move_frame = getAdjFrame(velma,0.02)
-        #moveInCartImpMode(velma, move_frame, 15.0)
+        for i in range(5, 180, 5):
+            move_frame = moveFrame(velma,0.01,i*(math.pi/180))
+            moveInCartImpMode(velma, move_frame, 2.0)
+            last_angle = i
+            last_state = velma.getLastJointState()[1]
+            if (last_state['right_arm_1_joint']>-1.25):
+                break
     except:
-        move_frame = getAdjFrame(velma,0.02)
-        #moveInCartImpMode(velma, move_frame, 15.0)
-
-print "/END"
+        do_nothing_here=0
+    try:
+        phase = 2
+        move_frame = moveFrame(velma,0.01,last_angle*(math.pi/180))
+        moveInCartImpMode(velma, move_frame, 5.0)
+        for i in range(last_angle+1, 180, 1):
+            move_frame = moveFrame(velma,0.01,i*(math.pi/180))
+            moveInCartImpMode(velma, move_frame, 0.4)
+            last_angle = i
+    except:
+        do_nothing_here=0
+    print last_angle
