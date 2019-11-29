@@ -20,58 +20,6 @@ from geometry_msgs.msg import Pose
 from visualization_msgs.msg import Marker
 import tf_conversions.posemath as pm
 
-class MarkerPublisherThread:
-    def threaded_function(self, obj):
-        pub = MarkerPublisher("attached_objects")
-        while not self.stop_thread:
-            pub.publishSinglePointMarker(PyKDL.Vector(), 1, r=1, g=0, b=0, a=1, namespace='default', frame_id=obj.link_name, m_type=Marker.CYLINDER, scale=Vector3(0.02, 0.02, 1.0), T=pm.fromMsg(obj.object.primitive_poses[0]))
-            try:
-                rospy.sleep(0.1)
-            except:
-                break
-
-        try:
-            pub.eraseMarkers(0, 10, namespace='default')
-            rospy.sleep(0.5)
-        except:
-            pass
-
-    def __init__(self, obj):
-        self.thread = Thread(target = self.threaded_function, args = (obj, ))
-
-    def start(self):
-        self.stop_thread = False
-        self.thread.start()
-
-    def stop(self):
-        self.stop_thread = True
-        self.thread.join()
-
-
- # define a function for frequently used routine in this test
-def planAndExecute(velma, q_dest):
-    # type: (object, object, object) -> object
-    goal_constraint = qMapToConstraints(q_dest, 0.01, group=velma.getJointGroup("impedance_joints"))
-    for i in range(10):
-        rospy.sleep(0.5)
-        js = velma.getLastJointState()
-        #print "Planning (try", i, ")..."
-        traj = p.plan(js[1], [goal_constraint], "impedance_joints", max_velocity_scaling_factor=0.15,
-                          planner_id="RRTConnect")
-        if traj == None:
-            continue
-        if not velma.moveJointTraj(traj, start_time=0.5):
-            exitError(5)
-        if velma.waitForJoint() == 0:
-            break      
-        else:
-            print "The trajectory could not be completed, retrying..."
-            continue
-    rospy.sleep(0.5)
-    js = velma.getLastJointState()
-    if not isConfigurationClose(q_dest, js[1]):
-        exitError(6)  
-
 def moveInCartImpMode(velma, T_B_dest, scaler):
     if not velma.moveCartImpRight([T_B_dest], [scaler], None, None, None, None, PyKDL.Wrench(PyKDL.Vector(5,5,5), PyKDL.Vector(5,5,5)), start_time=0.5):
         exitError(8)
@@ -114,30 +62,15 @@ def rotateTorso(velma, torso_angle, q_map, scaler):
     
 
 def grabWithRightHand(velma):
-    dest_q = [76.0/180.0*math.pi, 76.0/180.0*math.pi, 76.0/180.0*math.pi, 0]
+    dest_q = [90.0/180.0*math.pi, 90.0/180.0*math.pi, 90.0/180.0*math.pi, 0]
     velma.moveHandRight(dest_q, [1,1,1,1], [2000,2000,2000,2000], 1000, hold=True)
     if velma.waitForHandRight() != 0:
         exitError(10)
-    rospy.sleep(0.5)
-    if isHandConfigurationClose( velma.getHandRightCurrentConfiguration(), dest_q):
+    rospy.sleep(1)
+    if (not isHandConfigurationClose( velma.getHandRightCurrentConfiguration(), dest_q)):
         print "Couldn't grab"
         exitError(11)
     rospy.sleep(0.5)
-
-def moveToPositionZero(velma):
-    velma.moveJointImpToCurrentPos(start_time=0.5)
-    velma.waitForJoint()
-    planAndExecute(velma, q_map_starting)
-
-def findCanOnTable(table_tf, cafe_tf, can_tf):
-    [t0_x, t0_y, t0_z] = table_tf.p
-    [t1_x, t1_y, t1_z] = cafe_tf.p
-    [c_x, c_y, c_z] = can_tf.p
-
-    can_to_t0 = (c_x - t0_x)**2 + (c_y - t0_y)**2 + (c_z - t0_z)**2
-    can_to_t1 = (c_x - t1_x)**2 + (c_y - t1_y)**2 + (c_z - t1_z)**2
-
-    return "table" if can_to_t0 < can_to_t1 else "cafe"
 
 def switchToJntMode(velma):
     velma.moveJointImpToCurrentPos(start_time=0.2)
@@ -146,7 +79,7 @@ def switchToJntMode(velma):
         print "The action should have ended without error, but the error code is", error
         exitError(3)
  
-    rospy.sleep(1)
+    rospy.sleep(2)
     diag = velma.getCoreCsDiag()
     if not diag.inStateJntImp():
         print "The core_cs should be in jnt_imp state, but it is not" 
@@ -208,98 +141,84 @@ def getAdjCanPos(wrPos, canPos, r):
     newPos = PyKDL.Vector(canPos[0]+(r/l)*dx,canPos[1]+(r/l)*dy,0)
     return newPos
 
-def adjustCornerPos(x, y, cx, cy, angle):
-    x1 = x*math.cos(angle) - y*math.sin(angle) + cx
-    y1 = x*math.sin(angle) + y*math.cos(angle) + cy
-    return [x1, y1]
+def getAdjFrame(velma,r):
+    global rotation
+    handlePos = velma.getTf("Wo", "handle")
+    handleTwinPos = velma.getTf("Wo", "handle_twin")
+    rotPointPos = velma.getTf("Wo", "rot_point")
 
-def getCorners(tPos, width, length, angle):
-    cx = tPos[0]
-    cy = tPos[1]
-    x1 = width/2
-    y1 = length/2
-    c1 = adjustCornerPos(x1, y1, cx, cy, angle)
-    x1 = width/2
-    y1 = -length/2
-    c2 = adjustCornerPos(x1, y1, cx, cy, angle)
-    x1 = -width/2
-    y1 = -length/2
-    c3 = adjustCornerPos(x1, y1, cx, cy, angle)
-    x1 = -width/2
-    y1 = length/2
-    c4 = adjustCornerPos(x1, y1, cx, cy, angle)
-    #c1>c2>c3>c4>c1
-    return [c1, c2, c3, c4]
+    dx = handleTwinPos.p[0]-handlePos.p[0]
+    dy = handleTwinPos.p[1]-handlePos.p[1]
+    l = math.sqrt(math.pow(dx,2)+math.pow(dy,2))
 
-def getClosestPointToLine(segPos, wrPos):
-    xDelta = segPos[1][0] - segPos[0][0]
-    yDelta = segPos[1][1] - segPos[0][1]
-    l = ((wrPos[0] - segPos[0][0]) * xDelta + (wrPos[1] - segPos[0][1]) * yDelta) / (xDelta * xDelta + yDelta * yDelta)
-    if l <= 0:
-        [xc, yc] = segPos[0]
-    elif l >= 1:
-        [xc, yc] = segPos[1]
+    vx = (r/l)*(dx*math.cos(math.pi/2)-dy*math.sin(math.pi/2))
+    vy = (r/l)*(dx*math.sin(math.pi/2)+dy*math.cos(math.pi/2))
+
+    rot = math.atan2(vy,vx)
+    if (rotation==1):
+        frameRot=PyKDL.Rotation.RPY(0, math.pi/2, 0)*PyKDL.Rotation.RPY(-rot, 0, 0) #1st rotation
+    elif (rotation==2):
+        frameRot=PyKDL.Rotation.RPY(math.pi, -math.pi/2, 0)*PyKDL.Rotation.RPY(rot, 0, 0) #2nd rotation
     else:
-        xc = segPos[0][0] + l*xDelta
-        yc = segPos[0][1] + l*yDelta
-    return [xc, yc]
+        exitError(0) 
 
+    wx = handlePos.p[0]-vx
+    wy = handlePos.p[1]-vy
+    wz = handlePos.p[2]
+    frameVec = PyKDL.Vector(wx,wy,wz)
 
-def getDistance(x, y, xc, yc):
-    dx = math.pow(x-xc,2)
-    dy = math.pow(y-yc,2)
-    return math.sqrt(dx+dy)
+    frame = PyKDL.Frame(frameRot, frameVec)
+    return frame
 
-def getClosestPoint(wrPos, tFrame, width, length):
-    x = tFrame.p[0]
-    y = tFrame.p[1]
-    angle=getAngleFromRot(tFrame.M,'y')
-    xc = wrPos[0]
-    yc = wrPos[1]
-    [c1, c2, c3, c4] = getCorners([x, y], width, length, angle)
-    finalX = -1
-    finalY = -1
-    finalD = -1
-    segments = [[c1, c2],[c2, c3],[c3, c4],[c4, c1]]
-    for segment in segments:
-        [xf, yf] = getClosestPointToLine(segment, [xc, yc])
-        dist = getDistance(xf, yf, xc, yc)
-        if finalD == -1 or dist<finalD:
-            finalX = xf
-            finalY = yf
-            finalD = dist
-    return [finalX, finalY]
+def moveFrame(velma,r,angle):
+    global rotation
+    global rot_point
+    global handle
+    global handle_twin
+    global phase
 
-# Disable
-def blockPrint():
-    sys.stdout = open(os.devnull, 'w')
+    vHandleTwin = handle_twin.p-rot_point.p
+    vHandle = handle.p-rot_point.p
 
-# Restore
-def enablePrint():
-    sys.stdout = sys.__stdout__
+    dx = vHandleTwin[0]
+    dy = vHandleTwin[1]
+    vHandleTwin[0] = dx*math.cos(angle)-dy*math.sin(angle)
+    vHandleTwin[1] = dx*math.sin(angle)+dy*math.cos(angle)
 
-def printData(velma,deg=math.pi):
-    enablePrint()
-    global timestamp
-    global state
-    print "____________________"
-    print rospy.get_time()-timestamp #czas od ostatniego checkpointu
-    if deg!=-1.0:
-        abs(deg-velma.getTf("Wo", "Gr").M.GetRPY()[0]) #poziom chwytaka
+    dx = vHandle[0]
+    dy = vHandle[1]
+    vHandle[0] = dx*math.cos(angle)-dy*math.sin(angle)
+    vHandle[1] = dx*math.sin(angle)+dy*math.cos(angle)
+
+    vect = vHandleTwin-vHandle
+    
+    dx = vect[0]
+    dy = vect[1]
+    l = math.sqrt(math.pow(dx,2)+math.pow(dy,2))
+
+    if (phase==1):
+        vx = (r/l)*(dx*math.cos(math.pi/2)-dy*math.sin(math.pi/2))
+        vy = (r/l)*(dx*math.sin(math.pi/2)+dy*math.cos(math.pi/2))
     else:
-        print '0'
-    tempstate = velma.getLastJointState()[1]
-    for key in q_map_starting:
-        print abs(tempstate[key]-state[key])
-    timestamp = rospy.get_time()
-    state=tempstate
-    blockPrint()
+        vx = (r/l)*(dx*math.cos(0)-dy*math.sin(0))
+        vy = (r/l)*(dx*math.sin(0)+dy*math.cos(0))
 
-def begin():
-    print "Execution Time"
-    print "Gripper Level"
-    for key in q_map_starting:
-        print "Absolute value of "+key+" position difference"
+    rot = math.atan2(vy,vx)
+
+    if (rotation==1):
+        frameRot=PyKDL.Rotation.RPY(0, math.pi/2, 0)*PyKDL.Rotation.RPY(-rot, 0, 0) #1st rotation
+    elif (rotation==2):
+        frameRot=PyKDL.Rotation.RPY(math.pi, -math.pi/2, 0)*PyKDL.Rotation.RPY(rot, 0, 0) #2nd rotation
+    else:
+        exitError(0)
+
+    wx = rot_point.p[0]+vHandle[0]-vx
+    wy = rot_point.p[1]+vHandle[1]-vy
+    wz = rot_point.p[2]+vHandle[2]
+    frameVec = PyKDL.Vector(wx,wy,wz)
+
+    frame = PyKDL.Frame(frameRot, frameVec)
+    return frame
 
 def init():
     velma = VelmaInterface()
@@ -318,13 +237,21 @@ def init():
 
 if __name__ == "__main__":
     # define some configurations
-    blockPrint()
     q_map_starting = {'torso_0_joint':0,
         'right_arm_0_joint':-0.3,   'left_arm_0_joint':0.3,
         'right_arm_1_joint':-1.8,   'left_arm_1_joint':1.8,
         'right_arm_2_joint':1.25,   'left_arm_2_joint':-1.25,
-        'right_arm_3_joint':0.85,   'left_arm_3_joint':-0.85,
+        'right_arm_3_joint':0.8,   'left_arm_3_joint':-0.85,
         'right_arm_4_joint':0,      'left_arm_4_joint':0,
+        'right_arm_5_joint':-0.5,   'left_arm_5_joint':0.5,
+        'right_arm_6_joint':0,      'left_arm_6_joint':0 }
+
+    q_map_starting2 = {'torso_0_joint':0,
+        'right_arm_0_joint':-0.3,   'left_arm_0_joint':0.3,
+        'right_arm_1_joint':-1.2,   'left_arm_1_joint':1.8,
+        'right_arm_2_joint':1.25,   'left_arm_2_joint':-1.25,
+        'right_arm_3_joint':1.6,   'left_arm_3_joint':-0.85,
+        'right_arm_4_joint':0.6,      'left_arm_4_joint':0,
         'right_arm_5_joint':-0.5,   'left_arm_5_joint':0.5,
         'right_arm_6_joint':0,      'left_arm_6_joint':0 }
 
@@ -335,15 +262,7 @@ if __name__ == "__main__":
         'left_arm_4_joint':0,
         'left_arm_5_joint':0.5,
         'left_arm_6_joint':0 }
-
-    q_map_aq = {'torso_0_joint':0,
-        'right_arm_0_joint':-0.5,   'left_arm_0_joint':0.3,
-        'right_arm_1_joint':-1.3,   'left_arm_1_joint':1.8,
-        'right_arm_2_joint':1.25,   'left_arm_2_joint':-1.25,
-        'right_arm_3_joint':0.8,   'left_arm_3_joint':-0.85,
-        'right_arm_4_joint':-2,      'left_arm_4_joint':0,
-        'right_arm_5_joint':-0.5,   'left_arm_5_joint':0.5,
-        'right_arm_6_joint':0,      'left_arm_6_joint':0 }
+    rotation = 2 #change to "2" to switch config
 
 
     #standard initialization
@@ -352,130 +271,71 @@ if __name__ == "__main__":
 
     #Initializing robot...
     velma=init()
-
-    #adding octomap to planner
-    p = Planner(velma.maxJointTrajLen())
-    if not p.waitForInit():
-        print "could not initialize Planner"
-        exitError(2)
-    oml = OctomapListener("/octomap_binary")
-    rospy.sleep(1.0)
-    octomap = oml.getOctomap(timeout_s=5.0)
-    p.processWorld(octomap)
+    rot_point = velma.getTf("Wo", "rot_point")
+    handle = velma.getTf("Wo", "handle")
+    handle_twin = velma.getTf("Wo", "handle_twin")
+    phase = 1
 
     switchToJntMode(velma)
 
     #Moving to position zero
-    moveToPositionZero(velma)
+    moveToQmap(velma,q_map_starting,10.0)
+
+    T_Wo_Handle = velma.getTf("Wo", "handle")
+    Can_x = T_Wo_Handle.p[0]   
+    Can_y = T_Wo_Handle.p[1]
+    Can_z = T_Wo_Handle.p[2]
+
+    torso_angle = normalizeTorsoAngle(math.atan2(Can_y, Can_x))
+    rotateTorso(velma, torso_angle, q_map_starting2, 5.0)
 
     #Rotating robot...
     # can position
-    T_Wo_Can = velma.getTf("Wo", "beer")
-    T_Wo_Table_0 = velma.getTf("Wo", "table")
-    T_Wo_Table_1 = velma.getTf("Wo", "cafe")
-
-    target_table = findCanOnTable(T_Wo_Table_0, T_Wo_Table_1, T_Wo_Can) # na ktorym stoliku znajduje sie puszka
-
-    Can_x = T_Wo_Can.p[0]   
-    Can_y = T_Wo_Can.p[1]
-    Can_z = T_Wo_Can.p[2]
-
-    torso_angle = normalizeTorsoAngle(math.atan2(Can_y, Can_x))
-    rotateTorso(velma, torso_angle, q_map_starting, 10.0)
-    rotateTorso(velma, torso_angle, q_map_aq, 2.0)
-
-    enablePrint()
-    print "____________________\n/START"
-    begin()
-    timestamp = rospy.get_time()
-    state = velma.getLastJointState()[1]
 
     switchToCartMode(velma)
     moveForEquilibrium(velma)
 
     #moving grip halfway to can
-    pos1 = velma.getTf("Wo", "Gr")
-    pos2 = velma.getTf("Wo", "beer")
-    vector = pos2.p - pos1.p
-    xAngle = math.atan2(vector[1],vector[0])
-    move_rotation = PyKDL.Rotation.RPY(math.pi, 0, 0) #1st rotation
+    T_Wo_Grip = velma.getTf("Wo", "Gr")
+    move_rotation = PyKDL.Rotation.RPY(0, math.pi/2, 0) #1st rotation
 
-    move_vector = getAdjCanPos(pos1.p,T_Wo_Can.p, 0.3)+PyKDL.Vector(0, 0, T_Wo_Can.p[2]+0.12)
-    to_can_frame = PyKDL.Frame(move_rotation, move_vector)
-    moveInCartImpMode(velma, to_can_frame, 15.0)
-    printData(velma) #checkpoint
 
-    stateUpdate = velma.getLastJointState()[1] #(genpy.Time, {lastState})
-    stateUpdate['right_arm_5_joint']=-1.0 #clear for effector error
-    stateUpdate['right_arm_6_joint']=-1.0 #clear for effector error
-
-    move_vector = getAdjCanPos(pos1.p,T_Wo_Can.p, 0.0)+PyKDL.Vector(0, 0, T_Wo_Can.p[2]+0.12)
-    to_can_frame = PyKDL.Frame(move_rotation, move_vector)
+    T_Wo_Handle = velma.getTf("Wo", "handle")
+    move_vector = getAdjCanPos(T_Wo_Grip.p,T_Wo_Handle.p, 0.2)+PyKDL.Vector(0, 0, T_Wo_Handle.p[2])
+    to_can_frame = PyKDL.Frame(move_rotation, T_Wo_Grip.p)
     moveInCartImpMode(velma, to_can_frame, 5.0)
-    printData(velma) #checkpoint
 
-    move_vector = getAdjCanPos(pos1.p,T_Wo_Can.p, 0.0)+PyKDL.Vector(0, 0, T_Wo_Can.p[2]+0.02)
-    to_can_frame = PyKDL.Frame(move_rotation, move_vector)
-    moveInCartImpMode(velma, to_can_frame, 5.0)
-    printData(velma) #checkpoint
+    if (rotation==2):
+        move_rotation = PyKDL.Rotation.RPY(math.pi, -math.pi/2, 0) #2nd rotation
+        move_vector = getAdjCanPos(T_Wo_Grip.p,T_Wo_Handle.p, 0.2)+PyKDL.Vector(0, 0, T_Wo_Handle.p[2])
+        to_can_frame = PyKDL.Frame(move_rotation, T_Wo_Grip.p)
+        moveInCartImpMode(velma, to_can_frame, 25.0)
 
-    #Grabbing the can
+
+    move_frame = getAdjFrame(velma,0.001)
+    moveInCartImpMode(velma, move_frame, 15.0)
+
     grabWithRightHand(velma)
 
-    #Moving right gripper back up
-    move_vector = getAdjCanPos(pos1.p,T_Wo_Can.p, 0.0)+PyKDL.Vector(0, 0, T_Wo_Can.p[2]+0.12)
-    to_can_frame = PyKDL.Frame(move_rotation, move_vector)
-    moveInCartImpMode(velma, to_can_frame, 5.0)
-    printData(velma) #checkpoint
-
-    switchToJntMode(velma)
-    #Switching to jnt_mode
-    if target_table == "table":
-        target_table = "cafe"
-        #go to: cafe
-    else:
-        target_table = "table"
-        #go to: table
-    T_Wo_Dest = velma.getTf("Wo", target_table)
-    Target_x = T_Wo_Dest.p[0]
-    Target_y = T_Wo_Dest.p[1]
-
-    torso_angle = normalizeTorsoAngle(math.atan2(Target_y, Target_x))
-    rotateTorso(velma, torso_angle, stateUpdate, 5.0)
-    printData(velma,deg=-1.0) #checkpoint
-
-    #Move to target table
-    T_Wo_table = velma.getTf("Wo", target_table)    #calculating position for can placement
-    Wr_pos=velma.getTf("Wo", "Gr") #save reference frame
-    [xf, yf] = getClosestPoint(Wr_pos.p,T_Wo_table,1.2,0.4)
-    table_height=1.2
-    zf = T_Wo_table.p[2]+table_height
-
-    move_rotation=PyKDL.Rotation.RPY(math.pi,0,math.pi/2)
-
-    switchToCartMode(velma)
-    moveForEquilibrium(velma)
-    
-    #Start gripper move
-    place_can_frame = PyKDL.Frame(move_rotation, PyKDL.Vector(Wr_pos.p[0], Wr_pos.p[1], zf+0.05))
-    place_can_frame_up = place_can_frame
-    moveInCartImpMode(velma, place_can_frame, 10.0)
-    printData(velma) #checkpoint
-    place_can_frame2 = PyKDL.Frame(move_rotation, PyKDL.Vector(xf, yf, zf+0.05))
-    moveInCartImpMode(velma, place_can_frame2, 10.0)
-    printData(velma) #checkpoint
-    place_can_frame = PyKDL.Frame(move_rotation, PyKDL.Vector(xf, yf, zf-0.03))
-    moveInCartImpMode(velma, place_can_frame, 5.0)
-    printData(velma) #checkpoint
-
-    #Release object
-    openRightHand(velma)
-    printData(velma) #checkpoint
-
-    #Gripper move back
-    moveInCartImpMode(velma, place_can_frame2, 10.0)
-    printData(velma) #checkpoint
-    moveInCartImpMode(velma, place_can_frame_up, 5.0)
-    printData(velma) #checkpoint
-    enablePrint()
-print "/END"
+    last_angle=0
+    try:
+        for i in range(5, 180, 5):
+            move_frame = moveFrame(velma,0.001,i*(math.pi/180))
+            moveInCartImpMode(velma, move_frame, 2.0)
+            last_angle = i
+            last_state = velma.getLastJointState()[1]
+            if (last_state['right_arm_1_joint']>-1.25):
+                break
+    except:
+        do_nothing_here=0
+    try:
+        phase = 2
+        move_frame = moveFrame(velma,0.01,last_angle*(math.pi/180))
+        moveInCartImpMode(velma, move_frame, 5.0)
+        for i in range(last_angle+1, 180, 1):
+            move_frame = moveFrame(velma,0.001,i*(math.pi/180))
+            moveInCartImpMode(velma, move_frame, 0.4)
+            last_angle = i
+    except:
+        do_nothing_here=0
+    print last_angle

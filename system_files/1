@@ -1,5 +1,0 @@
-waitForMotor('hp'): ERROR_ALREADY_ENABLED (no error)
-waitForMotor('ht'): ERROR_ALREADY_ENABLED (no error)
-waitForMotor('t'): ERROR_ALREADY_ENABLED (no error)
-The core_cs should be in jnt_imp state, but it is not
-ERROR: 3

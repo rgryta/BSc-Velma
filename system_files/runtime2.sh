@@ -4,7 +4,7 @@ roscore >>/dev/null &
 sleep 10
 roslaunch stero_velma offline_octo.launch &
 sleep 15
-roslaunch stero_velma rviz_gazebo.launch &
+roslaunch stero_velma cab_rviz_gazebo.launch &
 sleep 15
 rosrun velma_task_cs_ros_interface initialize_robot.py
 rosrun stero_velma moveObjectInv.py >> "$1"
