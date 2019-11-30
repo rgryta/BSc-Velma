@@ -306,19 +306,12 @@ if __name__ == "__main__":
 
     #moving grip halfway to can
     T_Wo_Grip = velma.getTf("Wo", "Gr")
-    move_rotation = PyKDL.Rotation.RPY(0, math.pi/2, 0) #1st rotation
-
-
     T_Wo_Handle = velma.getTf("Wo", "handle")
+
+    move_rotation = PyKDL.Rotation.RPY(math.pi, -math.pi/2, 0) #2nd rotation
     move_vector = getAdjCanPos(T_Wo_Grip.p,T_Wo_Handle.p, 0.2)+PyKDL.Vector(0, 0, T_Wo_Handle.p[2])
     to_can_frame = PyKDL.Frame(move_rotation, T_Wo_Grip.p)
-    moveInCartImpMode(velma, to_can_frame, 5.0)
-
-    if (rotation==2):
-        move_rotation = PyKDL.Rotation.RPY(math.pi, -math.pi/2, 0) #2nd rotation
-        move_vector = getAdjCanPos(T_Wo_Grip.p,T_Wo_Handle.p, 0.2)+PyKDL.Vector(0, 0, T_Wo_Handle.p[2])
-        to_can_frame = PyKDL.Frame(move_rotation, T_Wo_Grip.p)
-        moveInCartImpMode(velma, to_can_frame, 25.0)
+    moveInCartImpMode(velma, to_can_frame, 25.0)
 
 
     move_frame = getAdjFrame(velma,0.01)
