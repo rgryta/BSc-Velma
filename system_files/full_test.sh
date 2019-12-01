@@ -1,5 +1,6 @@
 #!/bin/bash
 Configs="default 80s 70s 60s 50s 40s 30s 20s 10s 0s 90s035x0018z 50s035x0018z 45s"
+Configs="60s 50s 40s 30s 20s 10s 0s 90s035x0018z 50s035x0018z 45s"
 
 mkdir -p Wyniki
 cd Wyniki

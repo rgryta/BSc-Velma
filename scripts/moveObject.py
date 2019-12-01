@@ -337,7 +337,7 @@ if __name__ == "__main__":
     try:
         phase = 2
         move_frame = moveFrame(velma,0.01,last_angle*(math.pi/180))
-        moveInCartImpMode(velma, move_frame, 5.0)
+        moveInCartImpMode(velma, move_frame, 100.0)
         for i in range(last_angle+1, 180, 1):
             move_frame = moveFrame(velma,0.01,i*(math.pi/180))
             moveInCartImpMode(velma, move_frame, 0.4)

@@ -261,7 +261,7 @@ if __name__ == "__main__":
         'right_arm_2_joint':1.25,   'left_arm_2_joint':-1.25,
         'right_arm_3_joint':1.6,   'left_arm_3_joint':-0.85,
         'right_arm_4_joint':0.6,      'left_arm_4_joint':0,
-        'right_arm_5_joint':-0.5,   'left_arm_5_joint':0.5,
+        'right_arm_5_joint':-1,   'left_arm_5_joint':0.5,
         'right_arm_6_joint':0,      'left_arm_6_joint':0 }
 
     q_map_left = {'left_arm_0_joint':0.3,
@@ -320,6 +320,7 @@ if __name__ == "__main__":
     grabWithRightHand(velma)
 
     last_angle=0
+    enablePrint()
     try:
         for i in range(5, 180, 5):
             last_state = velma.getLastJointState()[1]
@@ -334,15 +335,15 @@ if __name__ == "__main__":
             last_angle = i
     except:
         do_nothing_here=0
+        print "Exception too late There"
     try:
         phase = 2
         move_frame = moveFrame(velma,0.01,last_angle*(math.pi/180))
-        moveInCartImpMode(velma, move_frame, 5.0)
+        moveInCartImpMode(velma, move_frame, 100.0)
         for i in range(last_angle+1, 180, 1):
             move_frame = moveFrame(velma,0.01,i*(math.pi/180))
             moveInCartImpMode(velma, move_frame, 0.4)
             last_angle = i
     except:
         do_nothing_here=0
-    enablePrint()
     print last_angle
