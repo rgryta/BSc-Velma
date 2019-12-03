@@ -314,7 +314,7 @@ if __name__ == "__main__":
     to_can_frame = PyKDL.Frame(move_rotation, T_Wo_Grip.p)
     moveInCartImpMode(velma, to_can_frame, 5.0)
 
-    move_frame = getAdjFrame(velma,0.01)
+    move_frame = getAdjFrame(velma,0.001)
     moveInCartImpMode(velma, move_frame, 15.0)
 
     grabWithRightHand(velma)
@@ -322,24 +322,20 @@ if __name__ == "__main__":
     last_angle=0
     try:
         for i in range(5, 180, 5):
-            last_state = velma.getLastJointState()[1]
-            if (last_state['right_arm_1_joint']>-1.25):
+            handlePos = velma.getTf("B", "handle").p
+            if (handlePos[1]<=-0.3):
                 break
-            if (last_state['right_arm_2_joint']>1.75):
-                break
-            if (last_state['right_arm_3_joint']<1.00):
-                break
-            move_frame = moveFrame(velma,0.01,i*(math.pi/180))
+            move_frame = moveFrame(velma,0.001,i*(math.pi/180))
             moveInCartImpMode(velma, move_frame, 2.0)
             last_angle = i
     except:
         do_nothing_here=0
     try:
         phase = 2
-        move_frame = moveFrame(velma,0.01,last_angle*(math.pi/180))
+        move_frame = moveFrame(velma,0.001,last_angle*(math.pi/180))
         moveInCartImpMode(velma, move_frame, 100.0)
         for i in range(last_angle+1, 180, 1):
-            move_frame = moveFrame(velma,0.01,i*(math.pi/180))
+            move_frame = moveFrame(velma,0.001,i*(math.pi/180))
             moveInCartImpMode(velma, move_frame, 0.4)
             last_angle = i
     except:
